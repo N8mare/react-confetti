@@ -36,10 +36,11 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
     context.clearRect(0, 0, width, height);
   };
 
-  const updateAndDrawParticles = (context) => {
+  const updateAndDrawParticles = (context, stopStremingConfetti = false) => {
     waveAngle = waveAngle + 0.01;
     let x2, y2;
-    for (let particle of particles) {
+    for (let i = 0; i < particles.length; i++) {
+      const particle = particles[i];
       //update particle
       particle.tiltAngle += particle.tiltAngleIncrement;
       particle.x = particle.x + Math.sin(particle.tiltAngle) * 2 - 1;
@@ -48,8 +49,12 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
         (Math.cos(waveAngle) + particle.diameter + confetti.speed) * 0.2;
       particle.tilt = Math.sin(particle.tiltAngle);
       if (particle.x > width + 20 || particle.x < -20 || particle.y > height) {
-        setParticle(particle);
-        particle.y = -20;
+        if (stopStremingConfetti) {
+          particles.splice(i, 1);
+        } else {
+          setParticle(particle);
+          particle.y = -20;
+        }
       }
       //draw particle
       context.beginPath();
@@ -80,38 +85,38 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
 
   useEffect(() => {
     let animationId;
+    let stopStremingConfetti = !playAnimation;
     const runAnimation = (ctx, height, width) => {
       ctx.clearRect(0, 0, width, height);
-      updateAndDrawParticles(ctx);
+      updateAndDrawParticles(ctx, stopStremingConfetti);
       animationId = requestAnimationFrame(() =>
         runAnimation(ctx, height, width)
       );
     };
 
-    if (playAnimation === true) {
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      ({ width, height } = canvas.getBoundingClientRect());
-      if (canvas.width !== width || canvas.height !== height) {
-        const { devicePixelRatio: ratio = 1 } = globalThis;
-        /**
-         * In case the device pixel ratio is more, the particles will be pixelated and will semm blur.
-         * That's why we are resizing the canvas.
-         * */
-        canvas.width = width * ratio;
-        canvas.height = height * ratio;
-        count = parseInt(canvas.width / 10, 10);
-        context.scale(ratio, ratio);
-      }
-
-      while (particles.length < count) {
-        particles.push(setParticle({}, width, height));
-      }
-      runAnimation(context, height, width);
+    // if (playAnimation === true) {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    ({ width, height } = canvas.getBoundingClientRect());
+    if (canvas.width !== width || canvas.height !== height) {
+      const { devicePixelRatio: ratio = 1 } = globalThis;
+      /**
+       * In case the device pixel ratio is more, the particles will be pixelated and will semm blur.
+       * That's why we are resizing the canvas.
+       * */
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      count = parseInt(canvas.width / 10, 10);
+      context.scale(ratio, ratio);
     }
+
+    while (particles.length < count) {
+      particles.push(setParticle({}, width, height));
+    }
+    runAnimation(context, height, width);
+
     return () => {
       cancelAnimationFrame(animationId);
-      clearCanvas();
     };
   }, [playAnimation]);
 
