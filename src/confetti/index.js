@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-const confettiDefault = {
+const confettiDefaultOptions = {
   colors: [
     'DodgerBlue',
     'OliveDrab',
@@ -18,7 +18,8 @@ const confettiDefault = {
   count: 200,
   waveAngle: 0,
   timeout: null,
-  speed: 8
+  gravity: 10,
+  windSpeed: 1
 };
 const globalThis = window;
 
@@ -28,7 +29,7 @@ class BridalConfetti {
   constructor(canvas, options = {}) {
     this.canvas = canvas;
     this.options = {
-      ...confettiDefault,
+      ...confettiDefaultOptions,
       ...options
     };
     this.height = 0;
@@ -45,12 +46,13 @@ class BridalConfetti {
       const particle = this.particles[i];
       //update particle
       particle.tiltAngle += particle.tiltAngleIncrement;
-      particle.x = particle.x + Math.sin(particle.tiltAngle) * 2 - 1;
+      particle.x =
+        particle.x + Math.sin(particle.tiltAngle) * 2 - this.options.windSpeed;
       particle.y =
         particle.y +
         (Math.cos(this.options.waveAngle) +
           particle.diameter +
-          this.options.speed) *
+          this.options.gravity) *
           0.2;
       particle.tilt = Math.sin(particle.tiltAngle);
       if (
@@ -137,41 +139,39 @@ class BridalConfetti {
   }
 }
 
-// HOC
-const Confetti = (() => {
-  let canvas = null;
+const Confetti = ({ styles = {}, options = {}, streamAnimation }) => {
+  const canvasRef = useRef(null);
+  const [canvas, setCanvas] = useState(null);
 
-  // The component to be exported and used outside
-  return ({ styles = {}, options = {}, streamAnimation }) => {
-    const canvasRef = useRef(null);
+  useEffect(() => {
+    setCanvas(new BridalConfetti(canvasRef.current, options));
 
-    useEffect(() => {
-      canvas = new BridalConfetti(canvasRef.current, options);
+    return () => {
+      canvas.ummountCanvas();
+    };
+  }, []);
 
-      return () => {
-        canvas.ummountCanvas();
-      };
-    }, []);
-
-    useEffect(() => {
+  useEffect(() => {
+    if (canvas) {
       if (streamAnimation) {
         canvas.startAnimation();
       } else {
+        // This will not work. Because canvas will be set to null befor this is invoked.
         canvas.stopAnimation();
       }
-    }, [streamAnimation]);
+    }
+  }, [streamAnimation, canvas]);
 
-    return (
-      <canvas
-        ref={canvasRef}
-        style={{
-          height: '100%',
-          width: '100%',
-          ...styles
-        }}
-      />
-    );
-  };
-})();
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        height: '100%',
+        width: '100%',
+        ...styles
+      }}
+    />
+  );
+};
 
 export default Confetti;
