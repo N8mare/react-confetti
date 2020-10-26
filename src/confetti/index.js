@@ -1,6 +1,6 @@
-import React, { Fragment, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
-const confetti = {
+const confettiDefault = {
   colors: [
     'DodgerBlue',
     'OliveDrab',
@@ -15,39 +15,53 @@ const confetti = {
     'Chocolate',
     'Crimson'
   ],
+  count: 200,
+  waveAngle: 0,
+  timeout: null,
   speed: 8
 };
 const globalThis = window;
 
 const { requestAnimationFrame, cancelAnimationFrame } = globalThis;
 
-const Confetti = ({ styles = {}, startRef, stopRef }) => {
-  const canvasRef = useRef(null);
-  let count = 200;
-  const particles = [];
-  let waveAngle = 0;
-  let height;
-  let width;
-  let animationId;
-  let stopStremingConfetti = false;
+class BridalConfetti {
+  constructor(canvas, options = {}) {
+    this.canvas = canvas;
+    this.options = {
+      ...confettiDefault,
+      ...options
+    };
+    this.height = 0;
+    this.particles = [];
+    this.width = 0;
+    this.stopStremingConfetti = false;
+    this.animationId = null;
+  }
 
-  const updateAndDrawParticles = (context) => {
-    waveAngle = waveAngle + 0.01;
+  updateAndDrawParticles(context) {
+    this.options.waveAngle = this.options.waveAngle + 0.01;
     let x2, y2;
-    for (let i = 0; i < particles.length; i++) {
-      const particle = particles[i];
+    for (let i = 0; i < this.particles.length; i++) {
+      const particle = this.particles[i];
       //update particle
       particle.tiltAngle += particle.tiltAngleIncrement;
       particle.x = particle.x + Math.sin(particle.tiltAngle) * 2 - 1;
       particle.y =
         particle.y +
-        (Math.cos(waveAngle) + particle.diameter + confetti.speed) * 0.2;
+        (Math.cos(this.options.waveAngle) +
+          particle.diameter +
+          this.options.speed) *
+          0.2;
       particle.tilt = Math.sin(particle.tiltAngle);
-      if (particle.x > width + 20 || particle.x < -20 || particle.y > height) {
-        if (stopStremingConfetti) {
-          particles.splice(i, 1);
+      if (
+        particle.x > this.width + 20 ||
+        particle.x < -20 ||
+        particle.y > this.height
+      ) {
+        if (this.stopStremingConfetti) {
+          this.particles.splice(i, 1);
         } else {
-          setParticle(particle);
+          this.setParticle(particle);
         }
       }
       //draw particle
@@ -62,65 +76,92 @@ const Confetti = ({ styles = {}, startRef, stopRef }) => {
       context.stroke();
       context.closePath();
     }
-  };
+  }
 
-  const setParticle = (particle) => {
+  runAnimation(ctx, height, width) {
+    ctx.clearRect(0, 0, width, height);
+    this.updateAndDrawParticles(ctx);
+    this.animationId = requestAnimationFrame(() =>
+      this.runAnimation(ctx, height, width)
+    );
+  }
+
+  setParticle(particle) {
     const randomFn = Math.random;
-    const colors = confetti.colors;
+    const colors = this.options.colors;
     particle.color = colors[parseInt(randomFn() * colors.length, 10)];
-    particle.x = randomFn() * width;
-    particle.y = randomFn() * height - height;
+    particle.x = randomFn() * this.width;
+    particle.y = randomFn() * this.height - this.height;
     particle.diameter = randomFn() * 6 + 6;
     particle.tilt = randomFn() * 10 - 10;
     particle.tiltAngleIncrement = randomFn() * 0.07 + 0.05;
     particle.tiltAngle = randomFn() * Math.PI;
     return particle;
-  };
+  }
 
-  const runAnimation = (ctx, height, width) => {
-    ctx.clearRect(0, 0, width, height);
-    updateAndDrawParticles(ctx, stopStremingConfetti);
-    animationId = requestAnimationFrame(() => runAnimation(ctx, height, width));
-  };
-
-  const startAnimation = () => {
-    cancelAnimationFrame(animationId);
-    stopStremingConfetti = false;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    ({ width, height } = canvas.getBoundingClientRect());
-    if (canvas.width !== width || canvas.height !== height) {
+  startAnimation() {
+    cancelAnimationFrame(this.animationId);
+    this.stopStremingConfetti = false;
+    const context = this.canvas.getContext('2d');
+    const { width, height } = this.canvas.getBoundingClientRect();
+    if (this.canvas.width !== width || this.canvas.height !== height) {
       const { devicePixelRatio: ratio = 1 } = globalThis;
       /**
        * In case the device pixel ratio is more, the particles will be pixelated and will semm blur.
        * That's why we are resizing the canvas.
        * */
-      canvas.width = width * ratio;
-      canvas.height = height * ratio;
-      count = parseInt(canvas.width / 10, 10);
+
+      this.canvas.width = width * ratio;
+      this.canvas.height = height * ratio;
       context.scale(ratio, ratio);
     }
-    while (particles.length < count) {
-      particles.push(setParticle({}, width, height));
+    this.height = height;
+    this.width = width;
+    while (this.particles.length < this.options.count) {
+      this.particles.push(this.setParticle({}));
     }
-    runAnimation(context, height, width);
-  };
+    this.runAnimation(context, height, width);
+    const { timeout } = this.options;
+    if (timeout && Number.isInteger(timeout)) {
+      setTimeout(this.stopAnimation.bind(this), timeout);
+    }
+  }
 
-  const stopAnimation = (e) => {
-    e.stopPropagation();
-    stopStremingConfetti = true;
-  };
+  stopAnimation() {
+    this.stopStremingConfetti = true;
+  }
 
-  useEffect(() => {
-    return () => {
-      cancelAnimationFrame(animationId);
-    };
-  }, []);
+  ummountCanvas() {
+    this.particles = [];
+    cancelAnimationFrame(this.animationId);
+  }
+}
 
-  return (
-    <Fragment>
-      <button onClick={startAnimation} hidden={true} ref={startRef}></button>
-      <button onClick={stopAnimation} hidden={true} ref={stopRef}></button>
+// HOC
+const Confetti = (() => {
+  let canvas = null;
+
+  // The component to be exported and used outside
+  return ({ styles = {}, options = {}, streamAnimation }) => {
+    const canvasRef = useRef(null);
+
+    useEffect(() => {
+      canvas = new BridalConfetti(canvasRef.current, options);
+
+      return () => {
+        canvas.ummountCanvas();
+      };
+    }, []);
+
+    useEffect(() => {
+      if (streamAnimation) {
+        canvas.startAnimation();
+      } else {
+        canvas.stopAnimation();
+      }
+    }, [streamAnimation]);
+
+    return (
       <canvas
         ref={canvasRef}
         style={{
@@ -129,8 +170,8 @@ const Confetti = ({ styles = {}, startRef, stopRef }) => {
           ...styles
         }}
       />
-    </Fragment>
-  );
-};
+    );
+  };
+})();
 
 export default Confetti;

@@ -1,17 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Confetti from './confetti';
 
 function App() {
-  const startBtn = useRef(null);
-  const stopBtn = useRef(null);
   const [showConfetti, setShowConfetti] = useState(false);
-
-  const startAnimation = () => {
-    startBtn.current.click();
-  };
-  const stopAnimation = () => {
-    stopBtn.current.click();
-  };
+  const [streamAnimation, toggleStreamAnimation] = useState(false);
 
   return (
     <div className="App">
@@ -28,9 +20,12 @@ function App() {
       </button>
       {showConfetti && (
         <div style={{ width: '100vh', height: '100vh', background: 'pink' }}>
-          <button onClick={startAnimation}>start</button>
-          <button onClick={stopAnimation}>stop</button>
-          <Confetti startRef={startBtn} stopRef={stopBtn} />
+          <button onClick={() => toggleStreamAnimation(true)}>start</button>
+          <button onClick={() => toggleStreamAnimation(false)}>stop</button>
+          <Confetti
+            options={{ count: 50, timeout: 3000 }}
+            streamAnimation={streamAnimation}
+          />
         </div>
       )}
     </div>
