@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { Fragment, useEffect, useRef } from 'react';
 
 const confetti = {
   colors: [
@@ -21,22 +21,17 @@ const globalThis = window;
 
 const { requestAnimationFrame, cancelAnimationFrame } = globalThis;
 
-const Confetti = ({ playAnimation = false, styles = {} }) => {
+const Confetti = ({ styles = {}, startRef, stopRef }) => {
   const canvasRef = useRef(null);
   let count = 200;
   const particles = [];
   let waveAngle = 0;
   let height;
   let width;
+  let animationId;
+  let stopStremingConfetti = false;
 
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    const { width, height } = canvas.getBoundingClientRect();
-    context.clearRect(0, 0, width, height);
-  };
-
-  const updateAndDrawParticles = (context, stopStremingConfetti = false) => {
+  const updateAndDrawParticles = (context) => {
     waveAngle = waveAngle + 0.01;
     let x2, y2;
     for (let i = 0; i < particles.length; i++) {
@@ -53,7 +48,6 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
           particles.splice(i, 1);
         } else {
           setParticle(particle);
-          particle.y = -20;
         }
       }
       //draw particle
@@ -83,18 +77,15 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
     return particle;
   };
 
-  useEffect(() => {
-    let animationId;
-    let stopStremingConfetti = !playAnimation;
-    const runAnimation = (ctx, height, width) => {
-      ctx.clearRect(0, 0, width, height);
-      updateAndDrawParticles(ctx, stopStremingConfetti);
-      animationId = requestAnimationFrame(() =>
-        runAnimation(ctx, height, width)
-      );
-    };
+  const runAnimation = (ctx, height, width) => {
+    ctx.clearRect(0, 0, width, height);
+    updateAndDrawParticles(ctx, stopStremingConfetti);
+    animationId = requestAnimationFrame(() => runAnimation(ctx, height, width));
+  };
 
-    // if (playAnimation === true) {
+  const startAnimation = () => {
+    cancelAnimationFrame(animationId);
+    stopStremingConfetti = false;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     ({ width, height } = canvas.getBoundingClientRect());
@@ -109,26 +100,36 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
       count = parseInt(canvas.width / 10, 10);
       context.scale(ratio, ratio);
     }
-
     while (particles.length < count) {
       particles.push(setParticle({}, width, height));
     }
     runAnimation(context, height, width);
+  };
 
+  const stopAnimation = (e) => {
+    e.stopPropagation();
+    stopStremingConfetti = true;
+  };
+
+  useEffect(() => {
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [playAnimation]);
+  }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        height: '100%',
-        width: '100%',
-        ...styles
-      }}
-    />
+    <Fragment>
+      <button onClick={startAnimation} hidden={true} ref={startRef}></button>
+      <button onClick={stopAnimation} hidden={true} ref={stopRef}></button>
+      <canvas
+        ref={canvasRef}
+        style={{
+          height: '100%',
+          width: '100%',
+          ...styles
+        }}
+      />
+    </Fragment>
   );
 };
 
