@@ -17,7 +17,7 @@ function App() {
           margin: '25px'
         }}
       >
-        Click Me to toggle animation
+        Click Me to mount/unmount animation
       </button>
       {showConfetti && (
         <div style={{ display: 'flex', 'justify-content': 'space-between' }}>

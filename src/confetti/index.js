@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Component, createRef } from 'react';
 
 const confettiDefaultOptions = {
   colors: [
@@ -139,39 +139,52 @@ class BridalConfetti {
   }
 }
 
-const Confetti = ({ styles = {}, options = {}, streamAnimation }) => {
-  const canvasRef = useRef(null);
-  const [canvas, setCanvas] = useState(null);
-
-  useEffect(() => {
-    setCanvas(new BridalConfetti(canvasRef.current, options));
-
-    return () => {
-      canvas.ummountCanvas();
+class Confetti extends Component {
+  constructor(props) {
+    super(props);
+    this.canvasRef = createRef();
+    this.state = {
+      canvas: null
     };
-  }, []);
+  }
 
-  useEffect(() => {
-    if (canvas) {
-      if (streamAnimation) {
-        canvas.startAnimation();
-      } else {
-        // This will not work. Because canvas will be set to null befor this is invoked.
-        canvas.stopAnimation();
-      }
+  componentDidMount() {
+    const canvas = new BridalConfetti(
+      this.canvasRef.current,
+      this.props.options
+    );
+    if (this.props.streamAnimation === true) {
+      canvas.startAnimation();
     }
-  }, [streamAnimation, canvas]);
+    this.setState({ canvas });
+  }
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        height: '100%',
-        width: '100%',
-        ...styles
-      }}
-    />
-  );
-};
+  componentDidUpdate() {
+    const { streamAnimation } = this.props;
+    if (streamAnimation) {
+      this.state.canvas.startAnimation();
+    } else {
+      this.state.canvas.stopAnimation();
+    }
+  }
+
+  componentWillUnmount() {
+    this.state.canvas.ummountCanvas();
+  }
+
+  render() {
+    const { styles } = this.props;
+    return (
+      <canvas
+        ref={this.canvasRef}
+        style={{
+          height: '100%',
+          width: '100%',
+          ...styles
+        }}
+      />
+    );
+  }
+}
 
 export default Confetti;
