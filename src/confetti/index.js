@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { Fragment, useEffect, useRef } from 'react';
 
 const confetti = {
   colors: [
@@ -21,7 +21,7 @@ const globalThis = window;
 
 const { requestAnimationFrame, cancelAnimationFrame } = globalThis;
 
-const Confetti = ({ playAnimation = false, styles = {} }) => {
+const Confetti = ({ styles = {}, startRef, stopRef }) => {
   const canvasRef = useRef(null);
   let count = 200;
   const particles = [];
@@ -29,9 +29,9 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
   let animationId;
   let height;
   let width;
+  let stopStremingConfetti = false;
 
   const updateAndDrawParticles = (context) => {
-    let stopStremingConfetti = !playAnimation;
     waveAngle = waveAngle + 0.01;
     let x2, y2;
     for (let i = 0; i < particles.length; i++) {
@@ -85,19 +85,12 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
     return particle;
   };
 
-  const startAnimation = (ctx) => {
-    height = ctx.canvas.height;
-    width = ctx.canvas.width;
-    while (particles.length < count) {
-      particles.push(setParticle({}, width, height));
-    }
-    runAnimation(ctx);
-  };
-
-  useEffect(() => {
+  const startAnimation = () => {
+    // cancelAnimationFrame(animationId);
+    stopStremingConfetti = false;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
-    const { width, height } = canvas.getBoundingClientRect();
+    ({ width, height } = canvas.getBoundingClientRect());
     if (canvas.width !== width || canvas.height !== height) {
       const { devicePixelRatio: ratio = 1 } = globalThis;
       /**
@@ -109,22 +102,35 @@ const Confetti = ({ playAnimation = false, styles = {} }) => {
       count = parseInt(canvas.width / 10, 10);
       context.scale(ratio, ratio);
     }
-    startAnimation(context);
+    while (particles.length < count) {
+      particles.push(setParticle({}, canvas.width, canvas.height));
+    }
+    runAnimation(context);
+  };
 
+  const stopAnimation = () => {
+    stopStremingConfetti = true;
+  };
+
+  useEffect(() => {
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [playAnimation]);
+  }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        height: '100%',
-        width: '100%',
-        ...styles
-      }}
-    />
+    <Fragment>
+      <button onClick={startAnimation} hidden={true} ref={startRef}></button>
+      <button onClick={stopAnimation} hidden={true} ref={stopRef}></button>
+      <canvas
+        ref={canvasRef}
+        style={{
+          height: '100%',
+          width: '100%',
+          ...styles
+        }}
+      />
+    </Fragment>
   );
 };
 

@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Confetti from './confetti';
 
 function App() {
+  const startBtn = useRef(null);
+  const stopBtn = useRef(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [start, setStart] = useState(false);
+  const [dummyState, setDummyState] = useState(false);
+
+  const startAnimation = () => {
+    startBtn.current.click();
+  };
+  const stopAnimation = () => {
+    stopBtn.current.click();
+  };
+  const rerender = () => {
+    setDummyState(!dummyState);
+  };
+
   return (
     <div className="App">
       <button
@@ -19,9 +32,10 @@ function App() {
       </button>
       {showConfetti && (
         <div style={{ width: '100vh', height: '100vh', background: 'pink' }}>
-          <button onClick={() => setStart(true)}>start</button>
-          <button onClick={() => setStart(false)}>stop</button>
-          <Confetti playAnimation={start} />
+          <button onClick={startAnimation}>start</button>
+          <button onClick={stopAnimation}>stop</button>
+          <button onClick={rerender}>rerender</button>
+          <Confetti startRef={startBtn} stopRef={stopBtn} />
         </div>
       )}
     </div>
