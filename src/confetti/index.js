@@ -21,7 +21,7 @@ const globalThis = window;
 
 const { requestAnimationFrame, cancelAnimationFrame } = globalThis;
 
-const Confetti = (props) => {
+const Confetti = ({ playAnimation = false, styles = {} }) => {
   const canvasRef = useRef(null);
   let count = 200;
   const particles = [];
@@ -88,31 +88,27 @@ const Confetti = (props) => {
   };
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    const { width, height } = canvas.getBoundingClientRect();
-    if (canvas.width !== width || canvas.height !== height) {
-      const { devicePixelRatio: ratio = 1 } = globalThis;
+    if (playAnimation === true) {
+      const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      /**
-       * In case the device pixel ratio is more, the particles will be pixelated and will semm blur.
-       * That's why we are resizing the canvas.
-       * */
-      canvas.width = width * ratio;
-      canvas.height = height * ratio;
-      count = parseInt(canvas.width / 10, 10);
-      context.scale(ratio, ratio);
+      const { width, height } = canvas.getBoundingClientRect();
+      if (canvas.width !== width || canvas.height !== height) {
+        const { devicePixelRatio: ratio = 1 } = globalThis;
+        /**
+         * In case the device pixel ratio is more, the particles will be pixelated and will semm blur.
+         * That's why we are resizing the canvas.
+         * */
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        count = parseInt(canvas.width / 10, 10);
+        context.scale(ratio, ratio);
+      }
+      startAnimation(context);
     }
-    if (props.animationTimeout) {
-      setTimeout(() => {
-        cancelAnimationFrame(animationId);
-      }, props.animationTimeout);
-    }
-    startAnimation(context);
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, []);
+  }, [playAnimation]);
 
   return (
     <canvas
@@ -120,7 +116,7 @@ const Confetti = (props) => {
       style={{
         height: '100%',
         width: '100%',
-        ...props.style
+        ...styles
       }}
     />
   );
