@@ -1,18 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Confetti from './confetti';
 
 function App() {
-  const startBtn = useRef(null);
-  const stopBtn = useRef(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [streamAnimation, toggleStreamAnimation] = useState(false);
   const [dummyState, setDummyState] = useState(false);
-
-  const startAnimation = () => {
-    startBtn.current.click();
-  };
-  const stopAnimation = () => {
-    stopBtn.current.click();
-  };
   const rerender = () => {
     setDummyState(!dummyState);
   };
@@ -32,10 +24,10 @@ function App() {
       </button>
       {showConfetti && (
         <div style={{ width: '100vh', height: '100vh', background: 'pink' }}>
-          <button onClick={startAnimation}>start</button>
-          <button onClick={stopAnimation}>stop</button>
+          <button onClick={() => toggleStreamAnimation(true)}>start</button>
+          <button onClick={() => toggleStreamAnimation(false)}>stop</button>
           <button onClick={rerender}>rerender</button>
-          <Confetti startRef={startBtn} stopRef={stopBtn} />
+          <Confetti options={{ count: 50 }} streamAnimation={streamAnimation} />
         </div>
       )}
     </div>
