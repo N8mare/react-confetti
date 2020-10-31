@@ -86,7 +86,7 @@ const Confetti = ({ styles = {}, startRef, stopRef }) => {
   };
 
   const startAnimation = () => {
-    // cancelAnimationFrame(animationId);
+    cancelAnimationFrame(animationId);
     stopStremingConfetti = false;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
