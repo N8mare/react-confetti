@@ -158,12 +158,14 @@ class Confetti extends Component {
     this.setState({ canvas });
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
     const { streamAnimation } = this.props;
-    if (streamAnimation) {
-      this.state.canvas.startAnimation();
-    } else {
-      this.state.canvas.stopAnimation();
+    if (streamAnimation !== prevProps.streamAnimation) {
+      if (streamAnimation) {
+        this.state.canvas.startAnimation();
+      } else {
+        this.state.canvas.stopAnimation();
+      }
     }
   }
 
